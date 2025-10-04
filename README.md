@@ -2,6 +2,11 @@
 
 Un programa en Python que captura tu pantalla en tiempo real y la convierte a arte ASCII para mostrarla en la terminal.
 
+## ⚠️Aclaracion Ramas 👽
+
+- main: Código base sin hilos, optimizado para la claridad y el aprendizaje.
+- hilos: Código de alto rendimiento, optimizado para la mayor resolución/calidad visual con una mejora notable de frames.
+
 ## ✨ Características
 
 - 🎥 **Captura en tiempo real**: Convierte tu pantalla a ASCII mientras trabajas
