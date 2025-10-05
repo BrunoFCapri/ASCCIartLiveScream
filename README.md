@@ -7,6 +7,7 @@ Un proyecto en Python que captura la pantalla en tiempo real y la convierte a ar
 - 🎥 **Captura en tiempo real**: Convierte tu pantalla a ASCII mientras trabajas.
 - ⚡ **Procesamiento en paralelo**: Utiliza hilos para procesar matrices de la pantalla simultáneamente.
 - 📏 **Captura selectiva**: Permite seleccionar una región específica de la pantalla para capturar.
+ - 📏 **Captura selectiva**: Permite seleccionar una región específica de la pantalla para capturar (arrastrando un rectángulo sobre la pantalla).
 - 🎨 **Múltiples estilos ASCII**: Ofrece diferentes estilos de conversión de píxeles a caracteres ASCII.
 - 📊 **Estadísticas de rendimiento**: Monitorea FPS y otros métricas en tiempo real.
 - 🎯 **Interfaz intuitiva**: Fácil de usar con menús interactivos y salida en terminal.
@@ -29,6 +30,15 @@ Para ejecutar la aplicación, utiliza el siguiente comando en la terminal:
 ```bash
 python src/main.py
 ```
+
+### Seleccionar una región de la pantalla
+
+1. En el menú principal, elige la opción "📏 Captura de región específica".
+2. Se abrirá una superposición semitransparente en el monitor seleccionado.
+3. Arrastra con el mouse para dibujar el rectángulo de captura y suelta para confirmar.
+4. Presiona ESC o clic derecho para cancelar.
+
+Consejo: Si la superposición no está disponible en tu entorno, el sistema usará un método alternativo en el que posicione el mouse en dos esquinas y confirmes con Enter.
 
 ## 📋 Estructura del Proyecto
 

@@ -138,6 +138,10 @@ class ASCIIScreenCapture:
                 
                 elif choice == '3':  # Captura de región
                     region = self.screen_capture.get_region_interactive()
+                    if not region:
+                        print("❕ Selección cancelada. Volviendo al menú.")
+                        time.sleep(0.8)
+                        continue
                     fps = self.menu.get_fps_input()
                     color_mode = self.menu.get_color_mode()
                     self.capture_loop(fps=fps, region=region, ascii_style='detailed', color_mode=color_mode)

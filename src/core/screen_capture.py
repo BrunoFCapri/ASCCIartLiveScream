@@ -219,26 +219,147 @@ class ScreenCapture:
         screen_array = self.capture_screen(region, monitor_id)
         return self.resize_for_terminal(screen_array, width_scale)
     
-    def get_region_interactive(self) -> Tuple[int, int, int, int]:
-        """Permite al usuario seleccionar una región interactivamente"""
-        print("📍 Selección de región:")
+    def get_region_interactive(self) -> Optional[Tuple[int, int, int, int]]:
+        """Permite seleccionar una región arrastrando un rectángulo (overlay).
+
+        Retorna una tupla (x, y, width, height). Si el usuario cancela con ESC
+        o clic derecho, retorna None y el caller puede decidir qué hacer.
+        """
+        # Intentar método con overlay (Tkinter)
+        try:
+            region = self._select_region_overlay()
+            if region:
+                print(f"   📏 Región seleccionada: {region}")
+                return region
+            else:
+                print("   ❕ Selección cancelada")
+                return None
+        except Exception as e:
+            # Fallback al método por posiciones si algo falla
+            print(f"⚠️  No se pudo usar la selección con overlay ({e}). Usando método alternativo.")
+            return self._get_region_by_mouse_positions()
+
+    def _get_region_by_mouse_positions(self) -> Tuple[int, int, int, int]:
+        """Método alternativo: seleccionar región marcando dos esquinas con el mouse."""
+        print("📍 Selección de región (método alternativo):")
         print("1. Mueve el mouse a la esquina SUPERIOR IZQUIERDA")
         input("   Presiona Enter cuando esté en posición...")
-        
+
         x1, y1 = pyautogui.position()
         print(f"   ✅ Esquina superior izquierda: ({x1}, {y1})")
-        
+
         print("2. Mueve el mouse a la esquina INFERIOR DERECHA")
         input("   Presiona Enter cuando esté en posición...")
-        
+
         x2, y2 = pyautogui.position()
         print(f"   ✅ Esquina inferior derecha: ({x2}, {y2})")
-        
+
         # Calcular región (x, y, width, height)
-        region = (min(x1, x2), min(y1, y2), abs(x2 - x1), abs(y2 - y1))
+        x = min(x1, x2)
+        y = min(y1, y2)
+        w = abs(x2 - x1)
+        h = abs(y2 - y1)
+        region = (x, y, w, h)
         print(f"   📏 Región seleccionada: {region}")
-        
         return region
+
+    def _select_region_overlay(self) -> Optional[Tuple[int, int, int, int]]:
+        """Crea una ventana overlay para seleccionar una región arrastrando.
+
+        Retorna (x, y, w, h) o None si se cancela (ESC o clic derecho).
+        """
+        root = tk.Tk()
+        root.attributes('-topmost', True)
+        root.overrideredirect(True)
+        # Usar el monitor seleccionado
+        try:
+            mon = self.monitors[self.selected_monitor]
+            x_offset, y_offset = mon['x'], mon['y']
+            screen_w, screen_h = mon['width'], mon['height']
+        except Exception:
+            x_offset, y_offset, screen_w, screen_h = 0, 0, 1920, 1080
+
+        # Fondo semitransparente
+        try:
+            root.attributes('-alpha', 0.25)
+        except Exception:
+            pass
+
+        root.geometry(f"{screen_w}x{screen_h}+{x_offset}+{y_offset}")
+        root.config(cursor='crosshair')
+
+        canvas = tk.Canvas(root, bg='black', highlightthickness=0)
+        canvas.pack(fill=tk.BOTH, expand=True)
+
+        start = {'x': 0, 'y': 0}
+        rect = {'id': None}
+        label_id = {'id': None}
+        result = {'region': None}
+
+        def on_button_press(event):
+            start['x'], start['y'] = event.x, event.y
+            if rect['id'] is not None:
+                canvas.delete(rect['id'])
+            rect['id'] = canvas.create_rectangle(start['x'], start['y'], event.x, event.y,
+                                                 outline='red', width=2)
+            # Dimensiones
+            if label_id['id'] is not None:
+                canvas.delete(label_id['id'])
+            label_id['id'] = canvas.create_text(event.x + 5, event.y - 10, anchor='nw',
+                                                fill='white', text='0x0')
+
+        def on_mouse_move(event):
+            if rect['id'] is not None:
+                canvas.coords(rect['id'], start['x'], start['y'], event.x, event.y)
+                w = abs(event.x - start['x'])
+                h = abs(event.y - start['y'])
+                if label_id['id'] is not None:
+                    canvas.coords(label_id['id'], min(event.x, start['x']) + 5, min(event.y, start['y']) - 20)
+                    canvas.itemconfigure(label_id['id'], text=f"{w}x{h}")
+
+        def on_button_release(event):
+            x1, y1 = start['x'], start['y']
+            x2, y2 = event.x, event.y
+            # Convertir a coordenadas globales sumando offset del monitor
+            x = min(x1, x2) + x_offset
+            y = min(y1, y2) + y_offset
+            w = abs(x2 - x1)
+            h = abs(y2 - y1)
+            # Enforce tamaño mínimo para evitar región vacía
+            if w < 2 or h < 2:
+                result['region'] = None
+            else:
+                result['region'] = (x, y, w, h)
+            root.quit()
+
+        def on_escape(event=None):
+            result['region'] = None
+            root.quit()
+
+        # Clic derecho -> cancelar
+        def on_right_click(event):
+            on_escape()
+
+        canvas.bind('<ButtonPress-1>', on_button_press)
+        canvas.bind('<B1-Motion>', on_mouse_move)
+        canvas.bind('<ButtonRelease-1>', on_button_release)
+        canvas.bind('<Button-3>', on_right_click)
+        root.bind('<Escape>', on_escape)
+
+        # Mensaje de ayuda
+        help_text = ("Arrastra para seleccionar y suelta para confirmar. "
+                      "ESC o clic derecho para cancelar.")
+        help_label = canvas.create_text(10, 10, anchor='nw', fill='white', text=help_text)
+        canvas.itemconfigure(help_label, font=('Arial', 12, 'bold'))
+
+        # Bloquear hasta que termine
+        root.mainloop()
+        try:
+            root.destroy()
+        except Exception:
+            pass
+
+        return result['region']
 
     def start_capture(self):
         self.divide_into_matrices()
