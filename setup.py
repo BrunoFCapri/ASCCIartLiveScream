@@ -3,8 +3,8 @@ from setuptools import setup, find_packages
 setup(
     name='ascii-screen-capture-threaded',
     version='0.1.0',
-    author='Your Name',
-    author_email='your.email@example.com',
+    author='Bruno',
+    author_email='bruno.fabian.capri.oficial@gmail.com',
     description='A Python application that captures the screen in real-time and converts it to ASCII art using multithreading for improved performance.',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
